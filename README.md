@@ -1,6 +1,14 @@
-# Car Insurance -- QueryableState
+# Postgres  
 
-This CorDapp demonstrates [QueryableState](https://docs.corda.net/docs/corda-os/api-persistence.html) works in Corda. Corda allows developers
+This CorDapp is an extension of the Corda Kotlin Car Insurance sample app, available [here](https://github.com/corda/samples-kotlin/tree/master/Features/queryableState-carinsurance).
+
+Additionally, it demonstrates how to create a driver test using docker to run tests using a Postgres database. This can be useful to check that your database migrations will work on Postgres as sometimes there are discrepancies between how migrations run on H2 and Postgres.
+
+It also demonstrates how to use deploynodes to create a local network with postgres as a backing database.
+
+## Car Insurance -- QueryableState
+
+This CorDapp demonstrates how [QueryableState](https://docs.corda.net/docs/corda-os/api-persistence.html) works in Corda. Corda allows developers
 to have the ability to expose some or all parts of their states to a custom database
 table using an ORM tools. To support this feature the state must implement
 `QueryableState`.
