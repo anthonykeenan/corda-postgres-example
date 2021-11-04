@@ -122,8 +122,6 @@ class DriverBasedTest {
     private val postgresContainer = CordaPostgresDockerContainer("localhost", "5432", "postgres", "pass1234")
     private val bankAName = CordaX500Name("BankA", "", "GB")
     private val bankBName = CordaX500Name("BankB", "", "US")
-    private val bankA = TestIdentity(bankAName)
-    private val bankB = TestIdentity(bankBName)
 
     private fun checkLogFilesForSqlErrors(directory: Path) {
         // Check for sql errors
@@ -148,8 +146,9 @@ class DriverBasedTest {
 
     private fun getPermissions(): Set<String> {
         return setOf(
-                Permissions.startFlow<IssueInsurance>(),
-                Permissions.invokeRpc("vaultTrackBy")
+            Permissions.startFlow<IssueInsurance>(),
+            Permissions.invokeRpc("vaultTrackBy"),
+            Permissions.invokeRpc("wellKnownPartyFromX500Name")
         )
     }
 
@@ -184,6 +183,7 @@ class DriverBasedTest {
                         TestCordapp.findCordapp("net.corda.samples.carinsurance.flows"),
                         TestCordapp.findCordapp("net.corda.samples.carinsurance.contracts")
                     ),
+                    startNodesInProcess = false,
                     // This setting is required to force Corda to validate the schema on startup (which is what happens in production) -
                     // this helps to check the migration files will work in production
                     allowHibernateToManageAppSchema = false,
@@ -204,20 +204,21 @@ class DriverBasedTest {
                         )
                 ).map { it.getOrThrow() }
 
-                // If the SQL fails with errors, they logged in the diagnostics log file, but don't always cause the node not to start up
+                // If the SQL fails with errors, they get logged in the diagnostics log file, but don't always cause the node not to start up
                 listOf(bankAName, bankBName)
                         .forEach {
                             checkLogFilesForSqlErrors(baseDirectory(it).resolve("logs"))
                         }
 
+                val bankBIdentity = bankBHandle.nodeInfo.legalIdentities[0]
                 bankAHandle.rpc.startFlowDynamic(
                         IssueInsurance::class.java,
                         policy1,
-                        bankBHandle.nodeInfo.legalIdentities[0]
+                        bankBIdentity
                 ).use { it.returnValue.getOrThrow() }
 
-                assertEquals(bankBName, bankAHandle.resolveName(bankAName))
-                assertEquals(bankAName, bankBHandle.resolveName(bankBName))
+                assertEquals(bankAName, bankAHandle.resolveName(bankAName))
+                assertEquals(bankBName, bankBHandle.resolveName(bankBName))
             }
         } catch (ex: Exception) {
             Assert.fail(ex.message)

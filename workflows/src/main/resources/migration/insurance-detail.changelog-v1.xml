@@ -11,12 +11,12 @@
             <column name="transaction_id" type="NVARCHAR(64)">
                 <constraints nullable="false"/>
             </column>
-            <column name="policyNumber" type="NVARCHAR(64)"/>
+            <column name="policy_number" type="NVARCHAR(64)"/>
             <column name="duration" type="int"/>
             <column name="premium" type="int"/>
-            <column name="insuredvalue" type="BIGINT"/>
+            <column name="insured_value" type="BIGINT"/>
             <column name="id" type="NVARCHAR(64)"/>
-            <column name="registrationnumber" type="NVARCHAR(64)"/>
+            <column name="registration_number" type="NVARCHAR(64)"/>
         </createTable>
     </changeSet>
 </databaseChangeLog>

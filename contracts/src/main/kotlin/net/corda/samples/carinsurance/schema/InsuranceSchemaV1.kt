@@ -1,7 +1,6 @@
 package net.corda.samples.carinsurance.schema
 
 //4.6 changes
-import jdk.nashorn.internal.objects.annotations.Constructor
 import net.corda.core.schemas.MappedSchema
 import net.corda.core.schemas.PersistentState
 import org.hibernate.annotations.Type
@@ -23,22 +22,22 @@ object InsuranceSchemaV1 : MappedSchema(
         mappedTypes = listOf(PersistentClaim::class.java, PersistentInsurance::class.java, PersistentVehicle::class.java)) {
 
     override val migrationResource: String?
-        get() = "insurance.changelog-master";
+        get() = "insurance.changelog-master"
 
     @Entity
-    @Table(name = "CLAIM_DETAIL")
+    @Table(name = "claim_detail")
     class PersistentClaim(
-            @Id @Column(name = "Id")
+            @Id @Column(name = "id")
             @Type(type = "uuid-char")
             val uuid: UUID,
 
-            @Column(name = "claimNumber")
+            @Column(name = "claim_number")
             var claimNumber: String,
 
-            @Column(name = "claimDescription")
+            @Column(name = "claim_description")
             var claimDescription: String,
 
-            @Column(name = "claimAmount")
+            @Column(name = "claim_amount")
             var claimAmount: Int
     ) {
         // Default constructor required by hibernate.
@@ -49,16 +48,16 @@ object InsuranceSchemaV1 : MappedSchema(
     }
 
     @Entity
-    @Table(name = "VEHICLE_DETAIL")
+    @Table(name = "vehicle_detail")
     class PersistentVehicle(
-            @Id @Column(name = "Id")
+            @Id @Column(name = "id")
             @Type(type = "uuid-char")
             val uuid: UUID,
 
-            @Column(name = "registrationNumber")
+            @Column(name = "registration_number")
             val registrationNumber: String,
 
-            @Column(name = "chasisNumber")
+            @Column(name = "chassis_number")
             val chasisNumber: String,
 
             @Column(name = "make")
@@ -73,7 +72,7 @@ object InsuranceSchemaV1 : MappedSchema(
             @Column(name = "color")
             val color: String,
 
-            @Column(name = "fuelType")
+            @Column(name = "fuel_type")
             val fuelType: String
     ) {
         // Default constructor required by hibernate.
@@ -85,18 +84,18 @@ object InsuranceSchemaV1 : MappedSchema(
 
 
     @Entity
-    @Table(name = "INSURANCE_DETAIL")
+    @Table(name = "insurance_detail")
     class PersistentInsurance(
-            @Column(name = "policyNumber")
+            @Column(name = "policy_number")
             val policyNumber: String,
-            @Column(name = "insuredValue")
+            @Column(name = "insured_value")
             val insuredValue: Long,
             @Column(name = "duration")
             val duration: Int,
             @Column(name = "premium")
             val premium: Int,
             @OneToOne(cascade = [CascadeType.PERSIST])
-            @JoinColumns(JoinColumn(name = "id", referencedColumnName = "id"), JoinColumn(name = "registrationNumber", referencedColumnName = "registrationNumber"))
+            @JoinColumns(JoinColumn(name = "id", referencedColumnName = "id"), JoinColumn(name = "registration_number", referencedColumnName = "registration_number"))
             val vehicle: PersistentVehicle?,
             @OneToMany(cascade = [CascadeType.PERSIST])
             @JoinColumns(JoinColumn(name = "output_index", referencedColumnName = "output_index"), JoinColumn(name = "transaction_id", referencedColumnName = "transaction_id"))
