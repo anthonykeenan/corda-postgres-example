@@ -10,6 +10,9 @@ import net.corda.core.internal.readAllLines
 import net.corda.core.utilities.getOrThrow
 import net.corda.core.utilities.seconds
 import net.corda.node.services.Permissions
+import net.corda.samples.carinsurance.flows.InsuranceInfo
+import net.corda.samples.carinsurance.flows.IssueInsurance
+import net.corda.samples.carinsurance.flows.VehicleInfo
 import net.corda.testing.core.TestIdentity
 import net.corda.testing.driver.DriverDSL
 import net.corda.testing.driver.DriverParameters
@@ -145,8 +148,7 @@ class DriverBasedTest {
 
     private fun getPermissions(): Set<String> {
         return setOf(
-//                Permissions.startFlow<IssueCashFlow.Initiator>(),
-//                Permissions.startFlow<ExchangeForIVUFlow.Initiator>(),
+                Permissions.startFlow<IssueInsurance>(),
                 Permissions.invokeRpc("vaultTrackBy")
         )
     }
@@ -155,20 +157,39 @@ class DriverBasedTest {
         return User("${nodeName}User", "testPassword1", permissions = getPermissions())
     }
 
+    val car = VehicleInfo(
+            "I4U64FY56I48Y",
+            "165421658465465",
+            "BMW",
+            "M3",
+            "MPower",
+            "Black",
+            "gas")
+
+    val policy1 = InsuranceInfo(
+            "8742",
+            2000,
+            18,
+            49,
+            car)
+
     @Test
     fun `node postgres test`() {
         try {
             postgresContainer.start(listOf("notary", "banka", "bankb"))
             driver(
-                    DriverParameters(
-                            notaryCustomOverrides = getPostgresSettings("notary"),
-                            cordappsForAllNodes = setOf(
-                                    TestCordapp.findCordapp("net.corda.samples.carinsurance.flows"),
-                                    TestCordapp.findCordapp("net.corda.samples.carinsurance.contracts")
-                            ),
-                            allowHibernateToManageAppSchema = false,
-                            inMemoryDB = false // This flag is required to force schemas to be created
-                    )
+                DriverParameters(
+                    notaryCustomOverrides = getPostgresSettings("notary"),
+                    cordappsForAllNodes = setOf(
+                        TestCordapp.findCordapp("net.corda.samples.carinsurance.flows"),
+                        TestCordapp.findCordapp("net.corda.samples.carinsurance.contracts")
+                    ),
+                    // This setting is required to force Corda to validate the schema on startup (which is what happens in production) -
+                    // this helps to check the migration files will work in production
+                    allowHibernateToManageAppSchema = false,
+                    // This setting is required to force schemas to be created
+                    inMemoryDB = false
+                )
             ) {
                 val (bankAHandle, bankBHandle) = listOf(
                         startNode(
@@ -189,10 +210,15 @@ class DriverBasedTest {
                             checkLogFilesForSqlErrors(baseDirectory(it).resolve("logs"))
                         }
 
+                bankAHandle.rpc.startFlowDynamic(
+                        IssueInsurance::class.java,
+                        policy1,
+                        bankBHandle.nodeInfo.legalIdentities[0]
+                ).use { it.returnValue.getOrThrow() }
+
                 assertEquals(bankBName, bankAHandle.resolveName(bankAName))
                 assertEquals(bankAName, bankBHandle.resolveName(bankBName))
             }
-
         } catch (ex: Exception) {
             Assert.fail(ex.message)
         } finally {
@@ -200,36 +226,6 @@ class DriverBasedTest {
         }
     }
 
-    @Test
-    fun `node test`() = withDriver {
-        // Start a pair of nodes and wait for them both to be ready.
-        val (partyAHandle, partyBHandle) = startNodes(bankA, bankB)
-
-        // From each node, make an RPC call to retrieve another node's name from the network map, to verify that the
-        // nodes have started and can communicate.
-
-        // This is a very basic test: in practice tests would be starting flows, and verifying the states in the vault
-        // and other important metrics to ensure that your CorDapp is working as intended.
-        assertEquals(bankB.name, partyAHandle.resolveName(bankB.name))
-        assertEquals(bankA.name, partyBHandle.resolveName(bankA.name))
-    }
-
-    // Runs a test inside the Driver DSL, which provides useful functions for starting nodes, etc.
-    private fun withDriver(test: DriverDSL.() -> Unit) = driver(
-            DriverParameters(
-                    isDebug = true,
-                    startNodesInProcess = true
-            )
-    ) { test() }
-
     // Makes an RPC call to retrieve another node's name from the network map.
     private fun NodeHandle.resolveName(name: CordaX500Name) = rpc.wellKnownPartyFromX500Name(name)!!.name
-
-    // Resolves a list of futures to a list of the promised values.
-    private fun <T> List<Future<T>>.waitForAll(): List<T> = map { it.getOrThrow() }
-
-    // Starts multiple nodes simultaneously, then waits for them all to be ready.
-    private fun DriverDSL.startNodes(vararg identities: TestIdentity) = identities
-            .map { startNode(providedName = it.name) }
-            .waitForAll()
 }

@@ -75,7 +75,6 @@ class IssueInsuranceResponder(val counterpartySession: FlowSession) : FlowLogic<
     }
 }
 
-
 @CordaSerializable
 class InsuranceInfo(val policyNumber: String, val insuredValue: Long, val duration: Int, val premium: Int, val vehicleInfo: VehicleInfo)
 
