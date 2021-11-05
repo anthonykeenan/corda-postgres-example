@@ -44,17 +44,59 @@ There are two flow in this cordapp:
 
 For development environment setup, please refer to: [Setup Guide](https://docs.corda.net/getting-set-up.html).
 
+Additionally, you will need docker installed to spin up a postgres database, which is used for both the Postgres integration test and deploy nodes below. 
 
-### Running the CorDapp
+Note: It can also be done with a locally installed postgres instance, db parameters are stored in `constants.properties`.
 
-Open a terminal and go to the project root directory and type: (to deploy the nodes using bootstrapper)
+
+### Running the CorDapp using Postgres as a backend
+
+Start a local Postgres instance via docker using:
+
 ```
-./gradlew clean deployNodes
+docker run --name corda-pg -e POSTGRES_PASSWORD=pass1234 -p 5432:5432 -d postgres
 ```
-Then type: (to run the nodes)
+
+In order to set up the schemas and users, on Windows run:
+
 ```
-./build/nodes/runnodes
+type postgres-deploynodes\src\main\resources\db_setup.sql | docker exec -i corda-pg psql -h localhost -p 5432 -U postgres
 ```
+
+On mac/linux:
+
+```
+cat postgres-deploynodes/src/main/resources/db_setup.sql | docker exec -i corda-pg psql -h localhost -p 5432 -U postgres
+```
+
+Then, in order to start the network and run the migration scripts:
+
+```
+./gradlew :postgres-deploynodes:deployNodes
+```
+
+And start the nodes by running:
+
+```
+./postgres-deploynodes/build/nodes/runnodes
+```
+
+To kill the docker instance and clean up any resources used:
+
+```
+docker kill corda-pg
+docker system prune
+```
+
+### Postgres integration test
+
+The integration test in `workflows/src/integrationTest/kotlin/net/corda/samples/carinsurance/DriverBasedTest.kt` can be used as
+an example of how to run a full Corda integration test using Postgres as a backend. Often when using H2 as a backend for integration
+testing, Postgres specfic migration errors aren't discovered until the node is first installed in production.
+
+Common issues with Postgres migration scripts that can cause a 'table not found' error:
+* schema names need to be all lower case
+* table names need to be all lower case
 
 
 ### Interacting with the nodes
@@ -72,13 +114,6 @@ Use the option Import > Import from Link option in Postman to import the collect
 
 The JDBC url to connect to the database would be printed in the console in node
 startup. Use the url to connect to the database using a suitable client. The
-default username is 'sa' and password is '' (blank).
-You could download H2 Console to connect to h2 database here:
-http://www.h2database.com/html/download.html
+default username is 'postgres' and the password is 'pass1234' (this can be changed in `constants.properties`).
 
-<p align="center">
-  <img src="./clients/src/main/resources/static/JDBC-url.png" alt="Database URL" width="400">
-</p>
-
-Refer here for more details regarding connecting to the node database.
-https://docs.corda.net/head/node-database-access-h2.html
+You can download DBeaver to connect to the postgres instance [here](https://dbeaver.com/download/lite/). 
