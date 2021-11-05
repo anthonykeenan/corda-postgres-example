@@ -1,0 +1,84 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+        maven { url 'https://software.r3.com/artifactory/corda-releases' }
+    }
+
+    dependencies {
+        classpath "net.corda.plugins:cordapp:$corda_gradle_plugins_version"
+        classpath "net.corda.plugins:cordformation:$corda_gradle_plugins_version"
+    }
+}
+
+apply plugin: 'net.corda.plugins.cordformation'
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    runtimeOnly "$corda_release_group:corda-node-api:$corda_release_version"
+
+    cordapp project(":contracts")
+    cordapp project(":workflows")
+}
+
+jar.enabled = false
+
+def generateExtraConfig(nodeName) {
+    return [
+            dataSourceProperties : [
+                    dataSource: [
+                            url: 'jdbc:postgresql://' + postgres_host + ':' + postgres_port+ '/' + postgres_database,
+                            user: nodeName.toLowerCase(),
+                            password: postgres_password,
+                            currentSchema: nodeName.toLowerCase() + '_schema'
+                    ],
+                    dataSourceClassName: 'org.postgresql.ds.PGSimpleDataSource'
+            ],
+            jarDirs: [ "$rootDir${System.getProperty("file.separator")}drivers".toString() ]
+    ]
+}
+
+task deployNodes(type: net.corda.plugins.Cordform, dependsOn: ['jar']) {
+    directory "$buildDir/nodes"
+    nodeDefaults {
+        projectCordapp {
+            deploy = false
+        }
+        cordapp project(":contracts")
+        cordapp project(":workflows")
+        runSchemaMigration = true
+    }
+    node {
+        name "O=Notary,L=London,C=GB"
+        notary = [validating: true]
+        p2pAddress "localhost:10002"
+        rpcSettings {
+            address("localhost:10003")
+            adminAddress("localhost:10043")
+        }
+        rpcUsers = [[user: "user1", "password": "test", "permissions": ["ALL"]]]
+        extraConfig = generateExtraConfig("notary")
+    }
+    node {
+        name "O=Insurer,L=London,C=GB"
+        p2pAddress "localhost:10005"
+        rpcSettings {
+            address("localhost:10006")
+            adminAddress("localhost:10046")
+        }
+        rpcUsers = [[user: "user1", "password": "test", "permissions": ["ALL"]]]
+        extraConfig = generateExtraConfig("insurer")
+    }
+    node {
+        name "O=Insuree,L=New York,C=US"
+        p2pAddress "localhost:10008"
+        rpcSettings {
+            address("localhost:10009")
+            adminAddress("localhost:10049")
+        }
+        rpcUsers = [[user: "user1", "password": "test", "permissions": ["ALL"]]]
+        extraConfig = generateExtraConfig("insuree")
+    }
+}
