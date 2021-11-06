@@ -4,7 +4,7 @@ This CorDapp is an extension of the Corda Kotlin Car Insurance sample app, avail
 
 Additionally, it demonstrates how to create a driver test using docker to run tests using a Postgres database. This can be useful to check that your database migrations will work on Postgres as sometimes there are discrepancies between how migrations run on H2 and Postgres.
 
-It also demonstrates how to use deploynodes to create a local network with postgres as a backing database.
+It also demonstrates how to use deploynodes to create a local network with Postgres as a backing database.
 
 ## Car Insurance -- QueryableState
 
@@ -44,9 +44,9 @@ There are two flow in this cordapp:
 
 For development environment setup, please refer to: [Setup Guide](https://docs.corda.net/getting-set-up.html).
 
-Additionally, you will need docker installed to spin up a postgres database, which is used for both the Postgres integration test and deploy nodes below. 
+Additionally, you will need docker installed to spin up a Postgres database, which is used for both the Postgres integration test and deploy nodes below. 
 
-Note: It can also be done with a locally installed postgres instance, db parameters are stored in `constants.properties`.
+Note: It can also be done with a locally installed Postgres instance, db parameters are stored in `constants.properties`.
 
 
 ### Running the CorDapp using Postgres as a backend
@@ -116,4 +116,4 @@ The JDBC url to connect to the database would be printed in the console in node
 startup. Use the url to connect to the database using a suitable client. The
 default username is 'postgres' and the password is 'pass1234' (this can be changed in `constants.properties`).
 
-You can download DBeaver to connect to the postgres instance [here](https://dbeaver.com/download/lite/). 
+You can download DBeaver to connect to the Postgres instance [here](https://dbeaver.com/download/lite/). 
